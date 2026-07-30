@@ -6,7 +6,7 @@
 SELECT * FROM customer;
 
 /* 2. Use sql as a calculator */
-SELECT 1+1 as addition, 10*5 as multiplication, pi() as pi;
+SELECT 1+1 AS addition, 10*5 as multiplication, pi() as pi;
 
 
 /* 3. Add order by and limit clauses */
@@ -17,15 +17,17 @@ LIMIT 10;
 
 
 /* 4. Select multiple specific columns */
-SELECT 
-customer_first_name,
+SELECT
 customer_last_name,
+customer_first_name, -- comma between column names
 customer_postal_code
+
 FROM customer;
 
 
 /* 5. Add a static value in a column */
-SELECT 2026 as this_year, 'April' as this_month, customer_id
+SELECT 2026 as this_year, 'July' as this_month, customer_id
 FROM customer
+
 
 --------------------------------------------------------------------------------------------------------------------------------------------

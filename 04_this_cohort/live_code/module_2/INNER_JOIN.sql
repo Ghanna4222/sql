@@ -6,16 +6,18 @@
  ... use an INNER JOIN to see only products that have been purchased */
  
 -- without table aliases
-SELECT product_name, -- coming from the product table
-vendor_id, -- rest of these are coming from customer_purchases table
+SELECT product_name, -- coming from the product TABLE
+vendor_id, -- rest of these are coming from customer_purchases table 
 market_date,
 customer_id,
 customer_purchases.product_id,
 product.product_id
 
+
 FROM product
 INNER JOIN customer_purchases
 	ON customer_purchases.product_id = product.product_id;
+
 
 
 
@@ -26,15 +28,16 @@ INNER JOIN customer_purchases
 
 -- using table aliases
 SELECT DISTINCT 
-vendor_id, -- coming from cp
-product_id, 
-c.customer_id, -- coming from c
+vendor_id,  -- coming from cp
+product_id,  -- coming from cp
+c.customer_id,  -- coming from c (and below)
 customer_first_name,
 customer_last_name
 
 FROM customer_purchases AS cp
 INNER JOIN customer AS c
-	ON cp.customer_id = c.customer_id   
+	ON cp.customer_id = c.customer_id
+
 
 
 

@@ -11,13 +11,13 @@ WHERE customer_id = 1;
 SELECT * 
 FROM customer
 WHERE customer_id = 1
-OR customer_id = 2; -- OR is two rows, AND is 0 rows
+AND customer_id = 2; -- OR is two rows, AND is 0 rows
 
 
 /* 3. IN */
 SELECT * 
 FROM customer
-WHERE customer_id IN (3,4,5,6);
+WHERE customer_id IN (3,5,6,7);
 
 
 
@@ -29,15 +29,15 @@ WHERE product_name LIKE '%pepper%';
 
 /* 5. Nulls and Blanks*/
 SELECT * FROM product
-WHERE product_size IS NULL -- null
-OR product_size = ''; -- blank, two single quotes not one double quote, different from NULL
-
+WHERE product_size IS NULL 
+OR product_size = ''; -- blank, two single quotes NOT one double quote, different from NULL
 
 
 /* 6. BETWEEN x AND y */
 SELECT * 
 FROM customer
-WHERE customer_id BETWEEN 1 AND 20;
+WHERE customer_id BETWEEN 1 AND 20
+ORDER BY customer_id ASC;
 
 --dates
 SELECT * 
