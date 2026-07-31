@@ -6,18 +6,28 @@
 --SELECT
 /* 1. Write a query that returns everything in the customer table. */
 --QUERY 1
+
 SELECT *
 FROM customer;
+
 --END QUERY
 
 
 /* 2. Write a query that displays all of the columns and 10 rows from the customer table, 
 sorted by customer_last_name, then customer_first_ name. */
 --QUERY 2
-SELECT *
+
+SELECT
+customer_id,
+customer_last_name,
+customer_first_name,
+customer_postal_code
+
 FROM customer
 ORDER BY customer_last_name ASC, customer_first_name ASC
+
 LIMIT 10;
+
 --END QUERY
 
 
@@ -25,10 +35,14 @@ LIMIT 10;
 /* 1. Write a query that returns all customer purchases of product IDs 4 and 9. 
 Limit to 25 rows of output. */
 --QUERY 3
+
 SELECT *
+
 FROM customer_purchases
 WHERE product_id IN (4,9)
+
 LIMIT 25;
+
 --END QUERY
 
 /*2. Write a query that returns all customer purchases and a new calculated column 'price' (quantity * cost_per_quantity), 
@@ -38,10 +52,15 @@ filtered by customer IDs between 8 and 10 (inclusive) using either:
 Limit to 25 rows of output.
 */
 --QUERY 4
-SELECT *, quantity * cost_per_quantity AS 'price'
+
+SELECT *, 
+ROUND((quantity * cost_per_quantity), 2) AS 'price'
+
 FROM customer_purchases
 WHERE customer_id BETWEEN 8 AND 10
+
 LIMIT 25;
+
 --END QUERY
 
 
@@ -51,7 +70,10 @@ Using the product table, write a query that outputs the product_id and product_n
 columns and add a column called prod_qty_type_condensed that displays the word “unit” 
 if the product_qty_type is “unit,” and otherwise displays the word “bulk.” */
 --QUERY 5
-SELECT product_id, product_name
+
+SELECT 
+product_id, 
+product_name
 
 ,CASE 
 	WHEN product_qty_type = 'unit' THEN 'unit'
@@ -59,6 +81,7 @@ SELECT product_id, product_name
 	END AS prod_qty_type_condensed
 
 FROM product;
+
 --END QUERY
 
 
@@ -66,9 +89,10 @@ FROM product;
 add a column to the previous query called pepper_flag that outputs a 1 if the product_name 
 contains the word “pepper” (regardless of capitalization), and otherwise outputs 0. */
 --QUERY 6
-SELECT product_id, product_name
 
-,CASE 
+SELECT product_id, 
+product_name,
+CASE 
 	WHEN product_qty_type = 'unit' THEN 'unit'
 	ELSE 'bulk'
 	END AS prod_qty_type_condensed
@@ -78,7 +102,8 @@ SELECT product_id, product_name
 	ELSE 0
 	END AS pepper_flag
 	
-FROM product; 
+FROM product;
+ 
 --END QUERY
 
 
@@ -87,15 +112,20 @@ FROM product;
 vendor_id field they both have in common, and sorts the result by market_date, then vendor_name.
 Limit to 24 rows of output. */
 --QUERY 7
-SELECT vendor_name,
+
+SELECT 
+vendor_name,
 vendor.vendor_id,
 vendor_booth_assignments.vendor_id,
 market_date
+
 FROM vendor
 INNER JOIN vendor_booth_assignments
 	ON vendor.vendor_id = vendor_booth_assignments.vendor_id
 ORDER BY market_date, vendor_name
+
 LIMIT 24;
+
 --END QUERY
 
 
@@ -106,6 +136,7 @@ LIMIT 24;
 /* 1. Write a query that determines how many times each vendor has rented a booth 
 at the farmer’s market by counting the vendor booth assignments per vendor_id. */
 --QUERY 8
+
 SELECT
 vendor_name,
 count(market_date) as booths_rented
@@ -124,11 +155,12 @@ of customers for them to give stickers to, sorted by last name, then first name.
 
 HINT: This query requires you to join two tables, use an aggregate function, and use the HAVING keyword. */
 --QUERY 9
+
 SELECT
 cp.customer_id,
 customer_last_name,
 customer_first_name,
-SUM(quantity*cost_per_quantity) as total_spent
+ROUND(SUM(quantity*cost_per_quantity), 2) as total_spent
 
 FROM customer_purchases as cp
 
@@ -136,7 +168,7 @@ INNER JOIN customer as c
 	ON cp.customer_id = c.customer_id
 
 GROUP BY customer_last_name, customer_first_name
---ORDER BY customer_last_name, customer_first_name
+
 HAVING total_spent > 2000;
 
 --END QUERY
@@ -174,11 +206,15 @@ HINT: you might need to search for strfrtime modifiers sqlite on the web to know
 and year are! 
 Limit to 25 rows of output. */
 --QUERY 11
-SELECT*
+
+SELECT
+customer_id,
+strftime('%m', market_date) as Month,
+strftime('%Y', market_date) as Year
+
 FROM customer_purchases
+
 LIMIT 25;
-
-
 
 --END QUERY
 
@@ -190,14 +226,15 @@ HINTS: you will need to AGGREGATE, GROUP BY, and filter...
 but remember, STRFTIME returns a STRING for your WHERE statement...
 AND be sure you remove the LIMIT from the previous query before aggregating!! */
 --QUERY 12
-SELECT *
-customer_last_name,
-customer_first_name,
-SUM(quantity*cost_per_quantity) as total_spent
+
+SELECT
+customer_id,
+ROUND((quantity*cost_per_quantity), 2) as money_spent,
+strftime('%m', market_date) as Month,
+strftime('%Y', market_date) as Year
 
 FROM customer_purchases
-GROUP BY market_date;
-
-
+WHERE Month = '04' AND Year = '2022'
+GROUP BY customer_id;
 
 --END QUERY
