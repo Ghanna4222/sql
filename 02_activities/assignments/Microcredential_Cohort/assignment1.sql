@@ -229,7 +229,7 @@ AND be sure you remove the LIMIT from the previous query before aggregating!! */
 
 SELECT
 customer_id,
-ROUND((quantity*cost_per_quantity), 2) as money_spent,
+ROUND(SUM(quantity*cost_per_quantity), 2) as money_spent,
 strftime('%m', market_date) as Month,
 strftime('%Y', market_date) as Year
 
