@@ -56,9 +56,9 @@ The store wants to keep customer addresses. Propose two architectures for the CU
 **HINT:** search type 1 vs type 2 slowly changing dimensions. 
 
 ```
-The architechture that will retain changes is a type 2 SCD. TO go about customer adresses this way, the architechture will create a new entry each time a new address is pushed to the table and registers the last entry in the table to a variable or only refernces the last entry in realted tables for that customer's address.
+The architecture that will retain changes is a type 2 SCD. TO go about customer addresses this way, the architecture will create a new entry each time a new address is pushed to the table and register the last entry in the table to a variable or only reference the last entry in related tables for that customer's address.
 
-The architechture that will overwrite changes is a type 1 SCD. In contrast this architechture will overwrite the existing entry for that customer's address and only keep the most recent entry.
+The architecture that will overwrite changes is a type 1 SCD. In contrast, this architecture will overwrite the existing entry for that customer's address and only keep the most recent entry.
 
 ```
 
