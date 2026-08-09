@@ -23,8 +23,10 @@ Edit the appropriate columns -- you're making two edits -- and the NULL rows wil
 All the other rows will remain the same. */
 --QUERY 1
 
-
-
+SELECT 
+--product_name || ', ' || product_size|| ' (' || product_qty_type || ')'
+coalesce(NULLIF(product_name,''),'') ||', '||coalesce(NULLIF(product_size,''),'') ||'('||coalesce(NULLIF(product_qty_type,''),'unit')||')'
+FROM product;
 
 --END QUERY
 
@@ -41,8 +43,11 @@ HINT: One of these approaches uses ROW_NUMBER() and one uses DENSE_RANK().
 Filter the visits to dates before April 29, 2022. */
 --QUERY 2
 
-
-
+SELECT *
+,row_number() OVER(PARTITION BY customer_id ORDER BY market_date) as customer_vists
+FROM customer_purchases
+WHERE market_date < '2022-04-29'
+ORDER BY market_date;
 
 --END QUERY
 
@@ -53,8 +58,14 @@ only the customer’s most recent visit.
 HINT: Do not use the previous visit dates filter. */
 --QUERY 3
 
-
-
+SELECT x.customer_id, x.market_date as recent_vist
+FROM(
+    SELECT customer_id, 
+	market_date
+    ,row_number() OVER (PARTITION BY customer_id ORDER BY market_date DESC) as customer_vists
+    FROM customer_purchases 
+)x
+WHERE x.customer_vists = 1;
 
 --END QUERY
 
@@ -66,6 +77,12 @@ You can make this a running count by including an ORDER BY within the PARTITION 
 Filter the visits to dates before April 29, 2022. */
 --QUERY 4
 
+SELECT *
+,count(1) OVER(PARTITION BY product_id, customer_id) as TotalNumSold
+
+
+FROM customer_purchases
+WHERE market_date < '2022-04-29';
 
 
 
@@ -85,7 +102,9 @@ Remove any trailing or leading whitespaces. Don't just use a case statement for 
 Hint: you might need to use INSTR(product_name,'-') to find the hyphens. INSTR will help split the column. */
 --QUERY 5
 
-
+SELECT *
+,substr(product_name, INSTR(product_name,'-')+2, INSTR(product_name,'-')) as Description
+FROM product;
 
 
 --END QUERY
@@ -94,7 +113,10 @@ Hint: you might need to use INSTR(product_name,'-') to find the hyphens. INSTR w
 /* 2. Filter the query to show any product_size value that contain a number with REGEXP. */
 --QUERY 6
 
-
+SELECT *
+,substr(product_name, INSTR(product_name,'-')+2, INSTR(product_name,'-')) as Description
+FROM product
+WHERE product_size REGEXP '[0-9]';
 
 
 --END QUERY
@@ -111,8 +133,35 @@ HINT: There are a possibly a few ways to do this query, but if you're struggling
 with a UNION binding them. */
 --QUERY 7
 
+--1)
+DROP TABLE IF EXISTS temp.grouped_vendor_sales;
 
+CREATE TABLE temp.grouped_vendor_sales AS
 
+SELECT
+market_date,
+ROUND(SUM(quantity*cost_per_quantity), 2) as total_sales
+FROM customer_purchases
+GROUP BY market_date;
+
+--2)
+SELECT *
+FROM (
+	SELECT *
+	,max(total_sales) as bestday
+	FROM grouped_vendor_sales
+)x
+WHERE x.bestday IS NOT NULL
+
+UNION
+
+SELECT *
+FROM (
+	SELECT *
+	,min(total_sales) as worstday
+	FROM grouped_vendor_sales
+)x
+WHERE x.worstday IS NOT NULL
 
 --END QUERY
 
@@ -132,7 +181,47 @@ How many customers are there (y).
 Before your final group by you should have the product of those two queries (x*y).  */
 --QUERY 8
 
+--all items sold by vendors in vendor_inventory
+DROP TABLE IF EXISTS temp.distinct_vendors;
 
+CREATE TABLE temp.distinct_vendors AS
+
+SELECT DISTINCT vendor_id, 
+product_name, 
+original_price
+
+FROM product as p
+INNER JOIN vendor_inventory as vi
+	ON vi.product_id = p.product_id;
+
+--name of all vendors from vendor_inventory
+DROP TABLE IF EXISTS temp.distinct_vendor_names;
+
+CREATE TABLE temp.distinct_vendor_names AS
+
+SELECT v.vendor_name, 
+dv.vendor_id, 
+dv.product_name, 
+dv.original_price
+
+FROM distinct_vendors as dv
+INNER JOIN vendor as v
+	ON dv.vendor_id = v.vendor_id;
+
+--cross customer_id and calculate total sales per registered item
+SELECT vendor_name,
+product_name,
+sale5per
+
+FROM(
+	SELECT dvn.vendor_name, 
+	dvn.product_name, 
+	c.customer_id, 
+	5 * dvn.original_price * count(c.customer_id) as sale5per
+	FROM distinct_vendor_names as dvn
+	CROSS JOIN customer as c
+	GROUP BY dvn.product_name
+);
 
 
 --END QUERY
@@ -144,10 +233,21 @@ This table will contain only products where the `product_qty_type = 'unit'`.
 It should use all of the columns from the product table, as well as a new column for the `CURRENT_TIMESTAMP`.  
 Name the timestamp column `snapshot_timestamp`. */
 --QUERY 9
+DROP TABLE IF EXISTS product_units;
 
+CREATE TABLE product_units AS
 
+SELECT *
+FROM product
 
+WHERE product_qty_type = 'unit';
 
+ALTER TABLE product_units
+ADD snapshot_timestamp datetime;
+
+UPDATE product_units 
+SET snapshot_timestamp = CURRENT_TIMESTAMP
+WHERE snapshot_timestamp IS NULL;
 --END QUERY
 
 
@@ -155,8 +255,7 @@ Name the timestamp column `snapshot_timestamp`. */
 This can be any product you desire (e.g. add another record for Apple Pie). */
 --QUERY 10
 
-
-
+INSERT INTO product_units VALUES(27, 'Pecan Pie', '10"', 3, 'unit', CURRENT_TIMESTAMP);
 
 --END QUERY
 
@@ -167,8 +266,8 @@ This can be any product you desire (e.g. add another record for Apple Pie). */
 HINT: If you don't specify a WHERE clause, you are going to have a bad time.*/
 --QUERY 11
 
-
-
+DELETE FROM product_units 
+WHERE product_name = 'Pecan Pie';
 
 --END QUERY
 
@@ -191,9 +290,50 @@ Finally, make sure you have a WHERE statement to update the right row,
 When you have all of these components, you can run the update statement. */
 --QUERY 12
 
+--add current_quantity coloumn
+ALTER TABLE product_units
+ADD current_quantity INT;
 
+--determine recent_qty
+DROP TABLE IF EXISTS temp.recent_stock;
 
+CREATE TABLE temp.recent_stock AS
 
+SELECT x.product_id, 
+x.market_date,
+x.quantity as recent_quantity
+
+ FROM(
+    SELECT product_id,
+	quantity,
+	market_date
+    ,row_number() OVER (PARTITION BY product_id ORDER BY market_date DESC) as qty_rank
+    FROM vendor_inventory 
+)x
+WHERE x.qty_rank = 1;
+
+/*zero null values
+DROP TABLE IF EXISTS temp.zeroing;
+
+CREATE TABLE temp.zeroing AS
+
+SELECT *,
+coalesce(IFNULL(current_quantity,NULL),'0') as zeroed_qty
+FROM product_units as pu
+INNER JOIN recent_stock as rs
+	ON pu.product_id = rs.product_id */
+
+UPDATE product_units
+SET current_quantity = (
+    SELECT recent_quantity
+    FROM recent_stock
+    WHERE recent_stock.product_id = product_units.product_id
+)
+WHERE current_quantity IS NULL;
+
+UPDATE product_units
+SET current_quantity = (coalesce(NULLIF(current_quantity,NULL),'0'))
+WHERE current_quantity IS NULL;
 --END QUERY
 
 
